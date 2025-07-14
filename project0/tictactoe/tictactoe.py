@@ -30,7 +30,8 @@ def player(board):
                 num += 1
             elif item == O:
                 num -= 1
-        return X if num == 0 else O
+
+    return X if num == 0 else O
 
 
 def actions(board):
@@ -51,7 +52,7 @@ def result(board, action):
     """
     if action[0] < 0 or action[0] > 2 or action[1] < 0 or action[1] > 2:
         raise Exception("the action is not valid")
-    if board[action[0], action[1]] != EMPTY:
+    if board[action[0]][action[1]] != EMPTY:
         raise Exception("the cell is not empty")
 
     new_board = [row.copy() for row in board]
@@ -63,24 +64,27 @@ def winner(board):
     """
     Returns the winner of the game, if there is one.
     """
-    for i in range(3):
-        row = board[i]
-        if len(set(row)) == 1 and row[0] != EMPTY:
-            return row[0]
+    for row in board:
+        if row.count(X) == 3:
+            return X
+        elif row.count(O) == 3:
+            return O
 
-        col = [board[j][i] for j in range(3)]
-        if len(set(col)) == 1 and col[0] != EMPTY:
-            return col[0]
+    for col in range(3):
+        col_values = [board[0][col], board[1][col], board[2][col]]
+        if col_values.count(X) == 3:
+            return X
+        elif col_values.count(O) == 3:
+            return O
 
-        dia1 = [board[i][i] for i in range(3)]
-        if len(set(dia1)) == 1 and dia1[0] != EMPTY:
-            return dia1[0]
+    dia1 = [board[i][i] for i in range(3)]
+    dia2 = [board[i][2 - i] for i in range(3)]
+    if dia1.count(X) == 3 or dia2.count(X) == 3:
+        return X
+    elif dia1.count(O) == 3 or dia2.count(O) == 3:
+        return O
 
-        dia2 = [board[i][2 - i] for i in range(3)]
-        if len(set(dia2)) == 1 and dia2[0] != EMPTY:
-            return dia2[0]
-
-        return None
+    return None
 
 
 def terminal(board):
@@ -117,7 +121,8 @@ def minimax(board):
         opt_value = -math.inf
 
         for action in actions(board):
-            cur_value = max_value(result(board, action))
+            cur_board = result(board, action)
+            cur_value = max_value(cur_board)
             if cur_value > opt_value:
                 opt_action = action
                 opt_value = cur_value
@@ -126,7 +131,8 @@ def minimax(board):
         opt_value = math.inf
 
         for action in actions(board):
-            cur_value = min_value(result(board, action))
+            cur_board = result(board, action)
+            cur_value = min_value(cur_board)
             if cur_value < opt_value:
                 opt_action = action
                 opt_value = cur_value

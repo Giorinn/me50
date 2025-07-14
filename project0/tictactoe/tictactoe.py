@@ -23,27 +23,27 @@ def player(board):
     """
     Returns player who has the next turn on a board.
     """
-    num = 0
+    net_num = 0
     for row in board:
         for item in row:
             if item == X:
-                num += 1
+                net_num += 1
             elif item == O:
-                num -= 1
+                net_num -= 1
 
-    return X if num == 0 else O
+    return X if net_num == 0 else O
 
 
 def actions(board):
     """
     Returns set of all possible actions (i, j) available on the board.
     """
-    possible_actions = set()
+    valid_actions = set()
     for i in range(3):
         for j in range(3):
             if board[i][j] == EMPTY:
-                possible_actions.add((i, j))
-    return possible_actions
+                valid_actions.add((i, j))
+    return valid_actions
 
 
 def result(board, action):
@@ -91,7 +91,7 @@ def terminal(board):
     """
     Returns True if game is over, False otherwise.
     """
-    return True if winner(board) or all(item != EMPTY for row in board for item in row) else False
+    return True if (winner(board) is not None) or all(item != EMPTY for row in board for item in row) else False
 
 
 def utility(board):
@@ -121,8 +121,8 @@ def minimax(board):
         opt_value = -math.inf
 
         for action in actions(board):
-            cur_board = result(board, action)
-            cur_value = max_value(cur_board)
+            new_board = result(board, action)
+            cur_value = min_value(new_board)
             if cur_value > opt_value:
                 opt_action = action
                 opt_value = cur_value
@@ -131,8 +131,8 @@ def minimax(board):
         opt_value = math.inf
 
         for action in actions(board):
-            cur_board = result(board, action)
-            cur_value = min_value(cur_board)
+            new_board = result(board, action)
+            cur_value = max_value(new_board)
             if cur_value < opt_value:
                 opt_action = action
                 opt_value = cur_value

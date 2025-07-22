@@ -191,29 +191,73 @@ class MinesweeperAI():
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
-
+        # mark the cell as a made choice and safe
         self.moves_made.add(cell)
-        self.safes.add(cell)
+        self.mark_safe(cell)
 
         # update sentence that contains cell
         for sentence in self.knowledge:
             if cell in sentence.cells:
                 sentence.mark_safe(cell)
 
-
-        cells = set()
+        # add a new sentence based on the cell
+        nearby_cells = set()
         i, j = cell
         for m in range(i - 1, i + 2):
             for n in range(j - 1, j + 2):
-                if (m, n) not in self.safes:
-                    if (m, n) not in self.mines:
-                        cells.add(cell)
-                    else:
-                        count -= 1
+                if (m, n) in self.safes:
+                    continue
+                if (m, n) in self.mines:
+                    count -= 1
+                    continue
+                if 0 <= m < self.height and 0 <= n < self.width:
+                    nearby_cells.add((m, n))
+        if nearby_cells:
+            new_sentence = Sentence(nearby_cells, count)
+            self.knowledge.append(new_sentence)
 
-        cells.remove(cell)
-        sentence = Sentence(cells, count)
-        self.knowledge.append(sentence)
+        self.infer_from_knowledge()
+
+    # make inference
+    def infer_from_knowledge(self):
+        last_update = True
+        while last_update:
+            last_update = False
+
+            safes = set()
+            mines = set()
+
+            for sentence in list(self.knowledge):
+                safes.update(sentence.known_safes())
+                mines.update(sentence.known_mines())
+
+            if safes:
+                for safe in safes:
+                    self.mark_safe(safe)
+                last_update = True
+
+            if mines:
+                for mine in mines:
+                    self.mark_mine(mine)
+                last_update = True
+
+            if last_update:
+                continue
+
+            self.knowledge = [sentence for sentence in self.knowledge if sentence.cells]
+
+            inference = []
+            for sentence1 in self.knowledge:
+                for sentence2 in self.knowledge:
+                    if sentence1 != sentence2 and sentence1.cells.issubset(sentence2.cells):
+                        new_cells = sentence2.cells - sentence1.cells
+                        new_counts = sentence2.count - sentence1.count
+                        new_sentence = Sentence(new_cells, new_counts)
+                        if new_sentence not in self.knowledge and new_sentence not in inference:
+                            inference.append(new_sentence)
+            if inference:
+                self.knowledge.extend(inference)
+                last_update = True
 
 
 
@@ -238,9 +282,12 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
+        possible_move = []
         for i in range(self.height):
             for j in range(self.width):
                 if (i, j) not in self.moves_made and (i, j) not in self.mines:
-                    return i, j
-
-        return None
+                    possible_move.append((i, j))
+        if possible_move:
+            return random.choice(list(possible_move))
+        else:
+            return None

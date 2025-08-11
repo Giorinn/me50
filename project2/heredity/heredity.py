@@ -139,7 +139,61 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone in set `have_trait` has the trait, and
         * everyone not in set` have_trait` does not have the trait.
     """
-    raise NotImplementedError
+    prob = 1
+    gene_num = {}
+    for person in people:
+        if person in one_gene:
+            gene_num[person] = 1
+        elif person in two_genes:
+            gene_num[person] = 2
+        else:
+            gene_num[person] = 0
+
+    processed = set()
+
+    for person in people:
+        if people[person]['father'] is None and people[person]['mother'] is None:
+            gene_prob = PROBS['gene'][gene_num[person]]
+            trait_prob = PROBS['trait'][gene_num[person]][person in have_trait]
+            prob *= gene_prob * trait_prob
+            processed.add(person)
+
+    while len(people) > len(processed):
+        process_next = set()
+        for person in people:
+            if person not in processed and people[person]['father'] in processed and people[person]['mother'] in processed:
+                process_next.add(person)
+
+        for person in process_next:
+            father = people[person]['father']
+            mother = people[person]['mother']
+
+            child_gene_num = gene_num[person]
+
+            p_father_pass = compute_pass_prob(gene_num[father])
+            p_mother_pass = compute_pass_prob(gene_num[mother])
+
+            if child_gene_num == 0:
+                gene_prob = (1 - p_father_pass) * (1 - p_mother_pass)
+            elif child_gene_num == 1:
+                gene_prob = p_father_pass * (1 - p_mother_pass) + (1 - p_father_pass) * p_mother_pass
+            else:
+                gene_prob = p_father_pass * p_mother_pass
+
+            trait_prob = PROBS['trait'][child_gene_num][person in have_trait]
+
+            prob *= gene_prob * trait_prob
+            processed.add(person)
+    return prob
+
+def compute_pass_prob(gene_num):
+    mutation = PROBS['mutation']
+    if gene_num == 0:
+        return mutation
+    elif gene_num == 1:
+        return 0.5
+    else:
+        return 1 - mutation
 
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
@@ -149,7 +203,16 @@ def update(probabilities, one_gene, two_genes, have_trait, p):
     Which value for each distribution is updated depends on whether
     the person is in `have_gene` and `have_trait`, respectively.
     """
-    raise NotImplementedError
+    for person in probabilities:
+        if person in one_gene:
+            gene_num = 1
+        elif person in two_genes:
+            gene_num = 2
+        else:
+            gene_num = 0
+
+        probabilities[person]['gene'][gene_num] += p
+        probabilities[person]['trait'][True if person in have_trait else False] += p
 
 
 def normalize(probabilities):
@@ -157,8 +220,18 @@ def normalize(probabilities):
     Update `probabilities` such that each probability distribution
     is normalized (i.e., sums to 1, with relative proportions the same).
     """
-    raise NotImplementedError
+    for person in probabilities:
+        gene_dist = probabilities[person]['gene']
+        gene_sum = sum(gene_dist.values())
+        if gene_sum > 0:
+            for key in gene_dist:
+                gene_dist[key] /= gene_sum
 
+        trait_dist = probabilities[person]['trait']
+        trait_sum = sum(trait_dist.values())
+        if trait_sum > 0:
+            for key in trait_dist:
+                trait_dist[key] /= trait_sum
 
 if __name__ == "__main__":
     main()

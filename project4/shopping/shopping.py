@@ -1,5 +1,6 @@
 import csv
 import sys
+from zipfile import error
 
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -59,16 +60,45 @@ def load_data(filename):
     labels should be the corresponding list of labels, where each label
     is 1 if Revenue is true, and 0 otherwise.
     """
-    raise NotImplementedError
+    def month_type(value: str) -> int:
+        months = {
+            "jan": 0, "feb": 1, "mar": 2, "apr": 3,
+            "may": 4, "june": 5, "jul": 6, "aug": 7,
+            "sep": 8, "oct": 9, "nov": 10, "dec": 11
+        }
+        return months[value.strip().lower()]
 
+    def visitor_type(value: str) -> int:
+        return 1 if value == "Returning_Visitor" else 0
+
+    def weekend_type(value: str) -> int:
+        return 1 if value.strip().lower() == "true" else 0
+
+    col_types = [int, float, int, float, int, float, float, float, float, float,
+                 month_type, int, int, int, int, visitor_type, weekend_type]
+
+    evidence = []
+    labels = []
+
+    with open('shopping.csv', mode='r') as file:
+        reader = csv.reader(file)
+        next(reader)
+
+        for row in reader:
+            converted = [func(value) for func, value in zip(col_types, row[:-1])]
+            evidence.append(converted)
+            labels.append(1 if row[-1].strip().lower() == "true" else 0)
+
+    return evidence, labels
 
 def train_model(evidence, labels):
     """
     Given a list of evidence lists and a list of labels, return a
     fitted k-nearest neighbor model (k=1) trained on the data.
     """
-    raise NotImplementedError
-
+    model = KNeighborsClassifier(n_neighbors=1)
+    model.fit(evidence, labels)
+    return model
 
 def evaluate(labels, predictions):
     """
@@ -85,8 +115,27 @@ def evaluate(labels, predictions):
     representing the "true negative rate": the proportion of
     actual negative labels that were accurately identified.
     """
-    raise NotImplementedError
+    if len(labels) != len(predictions):
+        raise ValueError("labels and predictions must be the same length")
 
+    num = len(labels)
+    pos_total = 0
+    neg_total = 0
+    TP = 0
+    TN = 0
 
+    for i in range(num):
+        if labels[i] == 1:
+            pos_total += 1
+            if predictions[i] == 1:
+                TP += 1
+        else:
+            neg_total += 1
+            if predictions[i] == 0:
+                TN += 1
+    sensitivity = TP / pos_total if pos_total > 0 else 0
+    specificity = TN / neg_total if neg_total > 0 else 0
+
+    return sensitivity, specificity
 if __name__ == "__main__":
     main()

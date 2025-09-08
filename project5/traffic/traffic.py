@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 import tensorflow as tf
+from numpy.ma.core import resize
 
 from sklearn.model_selection import train_test_split
 
@@ -58,7 +59,18 @@ def load_data(data_dir):
     be a list of integer labels, representing the categories for each of the
     corresponding `images`.
     """
-    raise NotImplementedError
+    images = []
+    labels = []
+    for file_name in range(NUM_CATEGORIES):
+        file_dir = os.path.join(data_dir, str(file_name))
+        for image_name in os.listdir(file_dir):
+            image_path = os.path.join(file_dir, str(image_name))
+            image = cv2.imread(image_path)
+            resized_image = cv2.resize(image, (IMG_WIDTH, IMG_HEIGHT))
+            images.append(resized_image)
+            labels.append(file_name)
+
+    return images, labels
 
 
 def get_model():
@@ -67,8 +79,27 @@ def get_model():
     `input_shape` of the first layer is `(IMG_WIDTH, IMG_HEIGHT, 3)`.
     The output layer should have `NUM_CATEGORIES` units, one for each category.
     """
-    raise NotImplementedError
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Conv2D(32, (3, 3), activation = "relu", input_shape = (IMG_WIDTH, IMG_HEIGHT, 3)),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+
+        tf.keras.layers.Conv2D(64, (3, 3),activation = "relu"),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(128, (3, 3), activation="relu"),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
 
 
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(128, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(NUM_CATEGORIES, activation="softmax")
+    ])
+    model.compile(
+        optimizer='sgd',
+        loss='categorical_crossentropy',
+        metrics=['accuracy']
+    )
+
+    return model
 if __name__ == "__main__":
     main()

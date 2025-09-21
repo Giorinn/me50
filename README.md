@@ -1,5 +1,4 @@
 # Harvard CS50AI 
-My solutions for 6 projects
-# Course information
-Course name:CS50’s Introduction to Artificial Intelligence with Python             
+My solutions for 7 projects.
+           
 Course link:https://cs50.harvard.edu/ai/
